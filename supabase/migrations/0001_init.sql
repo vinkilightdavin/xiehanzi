@@ -18,7 +18,7 @@ create policy "admin reads all profiles" on profiles for select using (is_admin(
 
 -- Vở tập viết của người dùng
 create table projects (
-  id uuid primary key default gen_random_uuid(),
+  id text primary key, -- id do client tự sinh (dạng "proj-xxxxxxx"), không phải uuid
   user_id uuid references auth.users not null,
   name text not null,
   project_info jsonb not null,
