@@ -1,0 +1,31 @@
+@page {
+  size: A4;
+  margin: 15mm;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin: 0;
+    padding: 0;
+    background-color: white !important;
+  }
+
+  /* Prevent elements from breaking across pages */
+  .page-break-avoid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* Force page breaks where needed */
+  .page-break-after {
+    page-break-after: always;
+    break-after: page;
+  }
+  
+  /* Hide UI elements */
+  .print-hidden {
+    display: none !important;
+  }
+}
