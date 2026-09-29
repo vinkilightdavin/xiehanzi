@@ -39,9 +39,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { path, ...restQuery } = req.query;
-  const segments = Array.isArray(path) ? path : path ? [path] : [];
-  const joinedPath = segments.join('/');
+  // Lấy path trực tiếp từ req.url thay vì req.query['path'] — tên khóa query mà Vercel
+  // gán cho tham số catch-all không ổn định giữa các lần deploy (từng thấy là "...path"
+  // thay vì "path"), khiến joinedPath luôn rỗng và "courses" bị đẩy nhầm vào query string.
+  const requestUrl = new URL(req.url || '', 'http://localhost');
+  const joinedPath = requestUrl.pathname.replace(/^\/api\/kho-du-lieu\/?/, '');
 
   if (isRestrictedPath(joinedPath)) {
     const check = await checkApproved(req.headers.authorization);
@@ -50,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const qs = new URLSearchParams(restQuery as Record<string, string>).toString();
+  const qs = requestUrl.searchParams.toString();
   const url = `${KHO_DU_LIEU_BASE_URL}/api/v1/${joinedPath}${qs ? `?${qs}` : ''}`;
 
   try {
