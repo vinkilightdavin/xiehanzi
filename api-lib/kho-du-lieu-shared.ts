@@ -5,27 +5,37 @@ export const KHO_DU_LIEU_API_KEY = process.env.KHO_DU_LIEU_API_KEY || 'fake_key'
 
 export async function fetchUpstream(upstreamPath: string, qs: string) {
   const url = `${KHO_DU_LIEU_BASE_URL}/api/v1/${upstreamPath}${qs ? `?${qs}` : ''}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${KHO_DU_LIEU_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-  });
 
-  if (!response.ok) {
-    const rawBody = await response.text().catch(() => '');
-    let errorData: Record<string, unknown>;
-    try {
-      errorData = JSON.parse(rawBody);
-    } catch {
-      errorData = { error: rawBody ? rawBody.slice(0, 300) : `Upstream trả về ${response.status} không có nội dung.` };
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${KHO_DU_LIEU_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const rawBody = await response.text().catch(() => '');
+      let errorData: Record<string, unknown>;
+      try {
+        errorData = JSON.parse(rawBody);
+      } catch {
+        errorData = { error: rawBody ? rawBody.slice(0, 300) : `Upstream trả về ${response.status} không có nội dung.` };
+      }
+      console.error('[Proxy Error] upstream không ok', { url, status: response.status, rawBody: rawBody.slice(0, 500) });
+      return { ok: false as const, status: response.status, body: { ...errorData, upstream_url: url, upstream_status: response.status } };
     }
-    console.error('[Proxy Error] upstream không ok', { url, status: response.status, rawBody: rawBody.slice(0, 500) });
-    return { ok: false as const, status: response.status, body: { ...errorData, upstream_url: url, upstream_status: response.status } };
-  }
 
-  return { ok: true as const, status: 200, body: await response.json() };
+    return { ok: true as const, status: 200, body: await response.json() };
+  } catch (error) {
+    console.error('[Proxy Error] fetch thất bại', { url, error });
+    return {
+      ok: false as const,
+      status: 500,
+      body: { error: error instanceof Error ? error.message : 'Internal Server Error', upstream_url: url },
+    };
+  }
 }
 
 export async function checkApproved(authHeader: string | undefined): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
