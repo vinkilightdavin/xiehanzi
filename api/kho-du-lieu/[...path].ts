@@ -63,8 +63,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return res.status(response.status).json(errorData);
+      const rawBody = await response.text().catch(() => '');
+      let errorData: Record<string, unknown>;
+      try {
+        errorData = JSON.parse(rawBody);
+      } catch {
+        errorData = { error: rawBody ? rawBody.slice(0, 300) : `Upstream trả về ${response.status} không có nội dung.` };
+      }
+      console.error('[Proxy Error] upstream không ok', { url, status: response.status, rawBody: rawBody.slice(0, 500) });
+      return res.status(response.status).json({ ...errorData, upstream_url: url, upstream_status: response.status });
     }
 
     const data = await response.json();
