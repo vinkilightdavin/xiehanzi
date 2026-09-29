@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LessonSidebar } from './LessonSidebar';
 import { VocabGrid } from './VocabGrid';
 import { SettingsSidebar } from './SettingsSidebar';
@@ -10,6 +10,21 @@ import { useStore } from '../../store/useStore';
 export const AppLayout: React.FC = () => {
   const [scale, setScale] = useState(0.4);
   const { activeLessonId } = useStore();
+
+  // scale chỉ để xem trước trên màn hình; khi in/xuất PDF thật (window.print())
+  // luôn dùng tỷ lệ 100%, không phụ thuộc mức zoom đang xem.
+  const [isPrinting, setIsPrinting] = useState(false);
+  useEffect(() => {
+    const handleBeforePrint = () => setIsPrinting(true);
+    const handleAfterPrint = () => setIsPrinting(false);
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+  const displayScale = isPrinting ? 1 : scale;
 
   return (
     <div className="flex flex-col h-screen w-full bg-gray-200 overflow-hidden print:overflow-visible print:h-auto text-gray-800 font-sans">
@@ -63,10 +78,10 @@ export const AppLayout: React.FC = () => {
           <div className="flex-1 overflow-auto p-8 flex justify-center print:p-0 print:overflow-visible print:h-auto print:block">
             <div 
               className="origin-top shadow-2xl print:shadow-none print:transform-none"
-              style={{ 
-                transform: `scale(${scale})`, 
+              style={{
+                transform: `scale(${displayScale})`,
                 height: 'fit-content',
-                marginBottom: `${(1 - scale) * 297}mm` // rough compensation for scaling
+                marginBottom: `${(1 - displayScale) * 297}mm` // rough compensation for scaling
               }}
             >
               <PrintLayout />
